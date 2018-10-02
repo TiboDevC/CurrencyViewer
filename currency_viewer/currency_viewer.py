@@ -45,7 +45,7 @@ class CurrencyViewer:
         self.totals = []
         self.btc_total = 0
         self.total = {}
-        self.fiatbtcPair = {}
+        self.fiatbtc_pair = {}
         self.values = {}
         self.k = krakenex.API()
         self.k.load_key('kraken.key')
@@ -57,25 +57,26 @@ class CurrencyViewer:
 
     # %% Main purpose of this script
     # It calls every function in order, it allows to get the full data for user
-    def processCViewer(self, log=True, currency="USD", time="rfc1123"):
-
-        data, c, f = self.collectData()
-        price = self.getMarketPrice(c)
-        self.processingConversion(price, c, f)
-        self.displayResults()
+    def process_c_viewer(self, log=True, currency="USD", time="rfc1123"):
+        print("Processing...")
+        data, c, f = self.collect_data()
+        price = self.get_market_price(c)
+        self.processing_conversion(price, c, f)
+        self.display_results()
         if log:
-            self.writeLog(currency=currency, time=time)
+            self.write_log(currency=currency, time=time)
 
     # %% Exit error handling function
-    def _exitError(self):
+    @staticmethod
+    def exit_error():
         sys.exit("Can't continue with error")
 
     # %% Collecting data
-    def collectData(self):
+    def collect_data(self):
         data = self.k.query_private('Balance')
         if data['error']:
             print("Error : ", data['error'])
-            self._exitError()
+            self.exit_error()
 
         # We find currencies concerned by the user wallet
         if self.debugmode:
@@ -88,7 +89,8 @@ class CurrencyViewer:
         crypto_index = [c for c in data['result'] if (not c.startswith("Z"))]
         # We get every symbols except the ones which starts with "Z" (these are fiat currencies)
         # print (crypto_index)
-        if not crypto_index: sys.exit("Can't find any crypto currency on your wallet yet.")
+        if not crypto_index:
+            sys.exit("Can't find any crypto currency on your wallet yet.")
         for i in crypto_index:
             self.currencies.append(i)
 
@@ -125,7 +127,7 @@ class CurrencyViewer:
         return data, crypto_index, fiat_index
 
     # %% Get XBT to FIAT price
-    def getXBTtoFiatPrice(self, fiat):
+    def get_xbt_to_fiat_price(self, fiat):
         global index
         data_price = self.k.query_public('Ticker', {'pair': "XBT" + fiat, })
         print("XBT" + fiat)
@@ -145,15 +147,15 @@ class CurrencyViewer:
             index = list(data_price['result'].keys())[0]
         return data_price['result'][index]['c'][0]
 
-    # %% getMarketPrice
-    def getMarketPrice(self, crypto_index):
+    # %% get_market_price
+    def get_market_price(self, crypto_index):
         # We prepare our list of markets exchange we are interested in
 
         for i in crypto_index:
             if i != "XBT":
                 self.market.append(i + "XBT")
 
-        print("Markets concerned : ", self.market)  # This is
+        print("Markets concerned : ", self.market)  # This is optional
 
         # Extracts price of every currencies user is involved onto
 
@@ -179,8 +181,8 @@ class CurrencyViewer:
                     # We leave the program if this is not an Invalid asset pair error
                     sys.exit("Can't continue with error")
             else:
-                index = list(data_price['result'].keys())[0]
-                p = data_price['result'][index]['c'][0]
+                index_list = list(data_price['result'].keys())[0]
+                p = data_price['result'][index_list]['c'][0]
                 price.append(p)
                 print("Price of ", self.market[i], " added")
                 price[i] = float(price[i])
@@ -189,14 +191,14 @@ class CurrencyViewer:
                 # price is a list of str -> cast to float
         return price
 
-    # %% updateFiatInTotal
-    def updateFiatInTotal(self, fiat):
-        xbtfiat = self.getXBTtoFiatPrice(fiat)
-        self.fiatbtcPair.update({fiat: xbtfiat})
+    # %% update_fiat_in_total
+    def update_fiat_in_total(self, fiat):
+        xbtfiat = self.get_xbt_to_fiat_price(fiat)
+        self.fiatbtc_pair.update({fiat: xbtfiat})
         self.total[fiat] = self.btc_total * float(xbtfiat)
 
-    # %% processingConversion
-    def processingConversion(self, price, crypto_index, fiat_index):
+    # %% processing_conversion
+    def processing_conversion(self, price, crypto_index, fiat_index):
         # Finally multiplying balance of crypto of user wallet BY actual real-time price of market
         # price of coin in FIAT * amount of coin = Estimated value of currencies in FIAT MONEY
 
@@ -221,27 +223,23 @@ class CurrencyViewer:
             self.values.update({self.market[i]: self.balance[self.currencies.index(crypto_tmp)] * price[i]})
             print(self.market[i], self.balance[self.currencies.index(crypto_tmp)], price[i])
 
-            if self.market[i][0] == 'D':
-                pass
-            else:
-                pass
-
             self.btc_total += self.values[self.market[i]]
             print("btc_total =", self.btc_total)
 
         for i in fiat_index:
-            self.updateFiatInTotal(i)
+            self.update_fiat_in_total(i)
 
         for n in range(len(fiat_index)):
             self.values.update({self.currencies[len(crypto_index) + n]: self.balance[len(crypto_index) + n]})
 
     # %% Displaying
-    def displayResults(self):
+    def display_results(self):
         print(self.values)
         print(self.total)
 
     # %% Log file writer
-    def createLogFile(self, filename, assets, writeFiat):
+    @staticmethod
+    def create_log_file(filename, assets, write_fiat):
         log_file = open(filename, 'w', newline='')
         wr = csv.writer(log_file)
         print("Creating a log file ", filename)
@@ -250,7 +248,7 @@ class CurrencyViewer:
 
         dict_assets = assets
 
-        if not writeFiat:
+        if not write_fiat:
             for fiat in list(dict_assets['result']):
                 if fiat.startswith("Z"):
                     dict_assets['result'].pop(fiat)
@@ -263,11 +261,11 @@ class CurrencyViewer:
         log_file.close()
 
     # %% writing log
-    def writeLog(self, filename="data.csv", writeFiat=False, currency="USD", time='rfc1123'):
+    def write_log(self, filename="data.csv", write_fiat=False, currency="USD", time='rfc1123'):
         global lastLine
         assets = self.k.query_public('Assets')
         if not os.path.exists(os.path.join(os.getcwd(), filename)):
-            self.createLogFile(filename, assets, writeFiat)
+            self.create_log_file(filename, assets, write_fiat)
             var = 0  # Var (%) is set to 0 when creating file
 
         else:  # If file already exists :
@@ -276,18 +274,19 @@ class CurrencyViewer:
                     lastLine = row
                     break
 
-                if currency not in self.total: self.updateFiatInTotal(currency)
+                if currency not in self.total:
+                    self.update_fiat_in_total(currency)
                 # If user wants a fiat conversion not in his kraken wallet
 
                 var = 0
-                lastTotal = float(lastLine[-3])
-                if lastLine[-1] == currency and lastTotal > self.DELTA:
-                    var = float((self.total[currency] - lastTotal) / lastTotal) * 100
+                last_total = float(lastLine[-3])
+                if lastLine[-1] == currency and last_total > self.DELTA:
+                    var = float((self.total[currency] - last_total) / last_total) * 100
 
                 # We prepare the Var(%) by checking last Total value and currency
             print("Accumulating data...")
 
-        if not writeFiat:
+        if not write_fiat:
             for fiat in list(assets['result']):
                 if fiat.startswith("Z"):
                     assets['result'].pop(fiat)
@@ -303,9 +302,9 @@ class CurrencyViewer:
 
         for asset in list(assets['result']):
             if str(assets['result'][asset]['altname'] + "XBT") in self.values.keys():
-                assertValue = self.values[str(assets['result'][asset]['altname']) + "XBT"] * float(
-                    self.fiatbtcPair[currency])
-                row.append("{0:.5f}".format(assertValue))
+                assert_value = self.values[str(assets['result'][asset]['altname']) + "XBT"] * float(
+                    self.fiatbtc_pair[currency])
+                row.append("{0:.5f}".format(assert_value))
             else:
                 row.append("0")
 

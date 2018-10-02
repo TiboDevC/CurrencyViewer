@@ -64,37 +64,37 @@ See `basic_example.py`
 from currency_viewer import currency_viewer as cv
 
 a = cv.CurrencyViewer()
-a.processCViewer(log=True, currency="USD", time="rfc1123")
+a.process_c_viewer(log=True, currency="USD", time="rfc1123")
 ```
 
 This is aimed to be very easy to use.
 
 It is also possible to call some intermediate functions :
 
-* ```processCViewer(self, log=True, currency="USD", time="rfc1123")```:
-Main function to call, implies to call : collectData(), getMarketPrice(), processingConversion(), displayResults() and writeLog().
+* ```process_c_viewer(self, log=True, currency="USD", time="rfc1123")```:
+Main function to call, implies to call : collect_data(), get_market_price(), processing_conversion(), display_results() and write_log().
 Returns nothing
 
 
-* ```collectData(self)```:
+* ```collect_data(self)```:
 Uses krakenex library get data from Kraken API in Json.
 Returns raw data, list of crypto in user's wallet, list of fiat in user's wallet
 
 
-* ```getXBTtoFiatPrice(self, fiat)```:
+* ```get_xbt_to_fiat_price(self, fiat)```:
 Return XBT price for "fiat" input currency
 
 
-* ```getMarketPrice(self, crypto_index)```:
+* ```get_market_price(self, crypto_index)```:
 Returns crypto price in XBT
 
 
-* ```updateFiatInTotal(self, fiat)```:
+* ```update_fiat_in_total(self, fiat)```:
 Updates "total" dict table to add { Fiat_currency : Total_Wallet_Value }.
 Returns nothing
 
 
-* ```displayResults(self)```:
+* ```display_results(self)```:
 	* ``values`` (dict), total value of all crypto in XBT
 	* ``total`` (dict), total value in fiat currencies
 
